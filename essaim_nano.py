@@ -34,14 +34,14 @@ def plot_3d_graph(G, title):
   ax.set_zlabel("z")
   ax.set_title(title)
   fig.tight_layout()
-  plt.show()
 
 class graph_essaim:
 
-    def __init__(self, title, path , detection):
+    def __init__(self, title, path , detection, isWeight):
         self.title = title
         self.path = path
         self.detection = detection
+        self.isWeight = isWeight
         self.import_graph()
 
     def import_graph(self):
@@ -49,14 +49,17 @@ class graph_essaim:
         matrice = pd.read_csv(self.path).to_numpy()
 
         for i in range(len(matrice)):
-            self.graph.add_node(int(matrice[i][0]),pos=(matrice[i][1],matrice[i][2],matrice[i][3]))
+            self.graph.add_node(int(matrice[i][0]), pos=(matrice[i][1],matrice[i][2],matrice[i][3]))
 
         for i in range(len(matrice)):
             for  j in range(len(matrice)):
                 if i != j:
                     d = distance(matrice[i],matrice[j])
                     if d < self.detection:
-                        self.graph.add_edge(int(matrice[i][0]),int(matrice[j][0]))
+                        if self.isWeight:
+                            self.graph.add_edge(int(matrice[i][0]),int(matrice[j][0]), weight= d**2)
+                        else:
+                            self.graph.add_edge(int(matrice[i][0]),int(matrice[j][0]))
     
     def plot3D(self):
         plot_3d_graph(self.graph, self.title)
@@ -98,10 +101,11 @@ class graph_essaim:
         plt.show()
 
     def get_nb_cliques(self):
-        return len(list(nx.enumerate_all_cliques(self.graph)))
+        maximal_cliques = list(nx.find_cliques(self.graph))
+        return len(maximal_cliques)
     
-    def get_orders_cliques_distribution(self):
-        listCliques =  list(nx.enumerate_all_cliques(self.graph))
+    def plot_orders_cliques_distribution(self):
+        listCliques =  list(nx.find_cliques(self.graph))
         orders = [len(l) for l in listCliques]
         plt.figure()
         plt.hist(orders, color='tab:blue', edgecolor='black')
@@ -127,18 +131,21 @@ class graph_essaim:
         # Titres et labels
         plt.title("Distribution de l'ordre des composantes connexes", fontsize=16)
         plt.xlabel("Ordre des composantes connexes", fontsize=12)
-        plt.ylabel("Nombre de nœuds", fontsize=12)
+        plt.ylabel("Nombre de composantes connexes", fontsize=12)
 
         # Affichage de l'histogramme
         plt.grid(True)
         plt.show() 
-    
+
     def get_list_PCC(self,point):
         listRest = []
         for i in range(1,100):
             try :
                 if i !=point:
-                    listRest.append(nx.shortest_path_length(self.graph,point,i))
+                    if self.isWeight:
+                        listRest.append(nx.shortest_path_length(self.graph,point,i,weight='weight'))
+                    else :
+                        listRest.append(nx.shortest_path_length(self.graph,point,i))
             except :
                 None
         return listRest
@@ -150,9 +157,9 @@ class graph_essaim:
 
         # Titres et labels
         plt.title("Distribution des plus chemin du point "+str(point), fontsize=16)
-        plt.xlabel("Nombre de chemins", fontsize=12)
+        plt.xlabel("Longueurs des chemins", fontsize=12)
         plt.ylabel("Nombre de nœuds", fontsize=12)
 
         # Affichage de l'histogramme
         plt.grid(True)
-        plt.show() 
+        plt.show()
